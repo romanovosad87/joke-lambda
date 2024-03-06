@@ -13,6 +13,7 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Objects;
 
 public class RandomJoke implements RequestHandler<Void, Void> {
@@ -25,6 +26,8 @@ public class RandomJoke implements RequestHandler<Void, Void> {
     private static final String JOKE_OF_THE_DAY = "Joke of the day: \n%s";
     public static final String JOKES_RANDOM_URL = "https://api.chucknorris.io/jokes/random";
     public static final String VALUE = "value";
+    public static final int CONNECTION_TIMEOUT_SECONDS = 5;
+    public static final int CONNECTION_TIMEOUT_MILLISECONDS = 5000;
 
     @Override
     public Void handleRequest(Void input, Context context) {
@@ -34,7 +37,12 @@ public class RandomJoke implements RequestHandler<Void, Void> {
                 .GET()
                 .build();
         try {
-            HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(CONNECTION_TIMEOUT_SECONDS))
+                    .build();
+
+            HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
             String body = response.body();
             JSONObject jsonObject = new JSONObject(body);
             String joke = jsonObject.getString(VALUE);
@@ -47,6 +55,7 @@ public class RandomJoke implements RequestHandler<Void, Void> {
 
     public void sendTelegramMessage(String joke, LambdaLogger logger) throws Exception {
         String botToken = System.getenv(BOT_TOKEN);
+
         String chatId = System.getenv(CHAT_ID);
 
         if (Objects.nonNull(botToken) && Objects.nonNull(chatId)) {
@@ -62,6 +71,7 @@ public class RandomJoke implements RequestHandler<Void, Void> {
                 connection.setRequestMethod(POST);
                 connection.setDoOutput(true);
                 connection.setRequestProperty(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED);
+                connection.setConnectTimeout(CONNECTION_TIMEOUT_MILLISECONDS);
 
                 try (var outputStream = new DataOutputStream(connection.getOutputStream())) {
                     outputStream.writeBytes(parameters);
