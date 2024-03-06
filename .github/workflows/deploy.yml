@@ -40,7 +40,7 @@ jobs:
           name: Joke_lambda_Artifacts 
           
       - name: checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: default deploy
         uses: appleboy/lambda-action@v0.1.9
         with:
