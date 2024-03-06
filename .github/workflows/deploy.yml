@@ -8,10 +8,6 @@ on:
 jobs:
   deploy-aws-lambda:
     runs-on: ubuntu-latest
-    permissions:
-      # This is required for requesting GitHub's OIDC Token
-      # See https://github.com/aws-actions/configure-aws-credentials
-      id-token: write
     env:
       REGION: eu-west-3
       FUNCTION_NAME: joke_lambda
