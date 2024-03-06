@@ -1,0 +1,32 @@
+name: CD AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-aws-lambda:
+    runs-on: ubuntu-latest
+    env:
+      REGION: eu-west-3
+      FUNCTION_NAME: joke_lambda
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: adopt
+      - uses: axel-op/package-java-aws-lambda@main
+        id: package
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+      - name: Deploy on AWS
+        env:
+          JAR: ${{ steps.package.outputs.deployment-file }}
+        run: aws lambda update-function-code --function-name $FUNCTION_NAME --zip-file "fileb://$JAR"
+  
