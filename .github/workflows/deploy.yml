@@ -6,47 +6,27 @@ on:
       - main
 
 jobs:
-  build:
-
+  deploy-aws-lambda:
     runs-on: ubuntu-latest
-
+    env:
+      REGION: eu-west-3
+      FUNCTION_NAME: joke_lambda
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          
-      - name: Build with Maven
-        run: mvn -B package -DskipTests
-      
-      - name: Upload Maven Artifact
-        uses: actions/upload-artifact@v4
+          java-version: 17
+          distribution: adopt
+      - uses: axel-op/package-java-aws-lambda@main
+        id: package
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: Joke_lambda_Artifacts
-          path: target/joke-api-lambda-1.0-SNAPSHOT.jar
-      
-          
-  deploy_source:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: Joke_lambda_Artifacts 
-          
-      - name: checkout source code
-        uses: actions/checkout@v4
-      - name: default deploy
-        uses: appleboy/lambda-action@v0.1.9
-        with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: ${{ secrets.AWS_REGION }}
-          function_name: gorush
-          zip_file: /home/runner/work/joke-lambda/joke-lambda/joke-api-lambda-1.0-SNAPSHOT.jar
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+      - name: Deploy on AWS
+        env:
+          JAR: ${{ steps.package.outputs.deployment-file }}
+        run: aws lambda update-function-code --function-name $FUNCTION_NAME --zip-file "fileb://$JAR"
   
